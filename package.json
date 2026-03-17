@@ -1,0 +1,30 @@
+{
+  "name": "heycharge-card",
+  "version": "1.0.0",
+  "description": "A Home Assistant Lovelace card for controlling HeyCharge EV chargers",
+  "main": "dist/heycharge-card.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/heycharge-hq/lovelace-heycharge-card.git"
+  },
+  "keywords": [
+    "home-assistant",
+    "homeassistant",
+    "hacs",
+    "lovelace",
+    "custom-card",
+    "heycharge",
+    "ev-charger",
+    "electric-vehicle",
+    "consumer-gateway"
+  ],
+  "author": "HeyCharge",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/heycharge-hq/lovelace-heycharge-card/issues"
+  },
+  "homepage": "https://github.com/heycharge-hq/lovelace-heycharge-card#readme"
+}
