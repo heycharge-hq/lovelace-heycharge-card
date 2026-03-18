@@ -106,7 +106,7 @@ class HeyChargeCard extends LitElement {
       <ha-card>
         <div class="card-content">
           ${this._renderHeader(entities, isCharging)}
-          ${this._renderMainStatus(isCharging, chargingPower, sessionType)}
+          ${this._renderMainStatus(isCharging, chargingPower, chargingCurrent, sessionType)}
           ${this._renderControls(entities, isCharging, sessionType, currentLimit, currentRequest)}
           ${this.config.show_statistics ? this._renderStatistics(sessionDuration, sessionEnergy, entities) : ''}
           ${this.config.show_advanced ? this._renderAdvanced(entities, chargingCurrent) : ''}
@@ -120,18 +120,31 @@ class HeyChargeCard extends LitElement {
     const hasValidData = this._hasValidData(entities);
     let statusClass, statusText;
 
-    if (!hasValidData || chargerState.toLowerCase() === 'unknown') {
+    const state = chargerState.toLowerCase();
+    if (!hasValidData || state === 'unknown') {
       statusClass = 'disconnected';
-      statusText = 'Disconnected';
-    } else if (chargerState.toLowerCase() === 'boot') {
+      statusText = 'Gateway Offline';
+    } else if (state === 'disconnected') {
+      statusClass = 'disconnected';
+      statusText = 'Charger Offline';
+    } else if (state === 'boot') {
       statusClass = 'booting';
       statusText = 'Booting';
-    } else if (chargerState.toLowerCase() === 'initiated') {
+    } else if (state === 'preparing connection') {
+      statusClass = 'booting';
+      statusText = 'Getting Ready';
+    } else if (state === 'starting' || state === 'initiated') {
       statusClass = 'initiating';
       statusText = 'Starting';
-    } else if (chargerState.toLowerCase() === 'fatal error') {
+    } else if (state === 'stopping') {
+      statusClass = 'initiating';
+      statusText = 'Stopping';
+    } else if (state === 'faulted' || state === 'fatal error') {
       statusClass = 'error';
       statusText = 'Error';
+    } else if (state === 'updating') {
+      statusClass = 'booting';
+      statusText = 'Updating';
     } else if (isCharging) {
       statusClass = 'charging';
       statusText = 'Charging';
@@ -161,9 +174,9 @@ class HeyChargeCard extends LitElement {
     `;
   }
 
-  _renderMainStatus(isCharging, chargingPower, sessionType) {
+  _renderMainStatus(isCharging, chargingPower, chargingCurrent, sessionType) {
     const powerKw = (chargingPower / 1000).toFixed(1);
-    const totalAmps = (chargingPower / 230).toFixed(1);
+    const maxAmps = chargingCurrent.toFixed(1);
     const sessionBadge = this._getSessionBadge(sessionType);
 
     return html`
@@ -172,7 +185,7 @@ class HeyChargeCard extends LitElement {
           <span class="power-value">${powerKw}</span>
           <span class="power-unit">kW</span>
           <span class="power-sep">|</span>
-          <span class="power-amps">${totalAmps}</span>
+          <span class="power-amps">${maxAmps}</span>
           <span class="power-amps-unit">A</span>
         </div>
         <div class="power-label">Charging Power</div>
@@ -542,7 +555,7 @@ class HeyChargeCard extends LitElement {
       // Default: look for entities containing 'heycharge'
       candidates = allStates.filter(e => e.includes('heycharge'));
     }
-    console.debug(`[HeyCharge] Entity scan: prefix='${prefix}', candidates=${candidates.length}`);
+    console.debug(`[HeyCharge] Entity scan: prefix='${prefix}', candidates=${candidates.length}`, candidates.slice(0, 10));
     if (candidates.length === 0) return null;
 
     const result = {};
