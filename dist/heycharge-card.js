@@ -868,6 +868,10 @@ class HeyChargeCard extends LitElement {
         animation: pulse 2s infinite;
       }
 
+      .status-pill.idle {
+        background: rgba(76, 175, 80, 0.12);
+        color: var(--hc-active);
+      }
       .status-pill.idle .status-dot {
         background: var(--hc-active);
       }

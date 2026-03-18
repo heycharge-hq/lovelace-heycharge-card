@@ -1,6 +1,6 @@
 {
   "name": "heycharge-card",
-  "version": "0.0.10",
+  "version": "0.0.12",
   "description": "A Home Assistant Lovelace card for controlling HeyCharge EV chargers",
   "main": "dist/heycharge-card.js",
   "scripts": {
