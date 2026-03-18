@@ -592,8 +592,10 @@ class HeyChargeCard extends LitElement {
     for (const entityKey of Object.keys(entities)) {
       const entity = this.hass.states[entities[entityKey]];
       if (entity && entity.state !== 'unavailable') {
-        const lastChanged = new Date(entity.last_changed);
-        if (now - lastChanged < STALE_TIMEOUT) return true;
+        // Use last_updated (changes on every poll) rather than last_changed
+        // (which only changes when the value changes)
+        const lastUpdated = new Date(entity.last_updated || entity.last_changed);
+        if (now - lastUpdated < STALE_TIMEOUT) return true;
       }
     }
     return false;
