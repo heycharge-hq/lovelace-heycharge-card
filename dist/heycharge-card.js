@@ -149,8 +149,8 @@ class HeyChargeCard extends LitElement {
     return html`
       <div class="header">
         <div class="header-left">
-          <img src="/local/heycharge-card/assets/logo-color.png" class="header-logo header-logo-light" alt="HeyCharge" />
-          <img src="/local/heycharge-card/assets/logo-dark.png" class="header-logo header-logo-dark" alt="HeyCharge" />
+          <img src="${_hcBasePath}/assets/logo-color.png" class="header-logo header-logo-light" alt="HeyCharge" />
+          <img src="${_hcBasePath}/assets/logo-dark.png" class="header-logo header-logo-dark" alt="HeyCharge" />
           <div class="device-name">${chargerName}</div>
         </div>
         <div class="status-pill ${statusClass}">
@@ -1539,11 +1539,17 @@ window.customCards.push({
   documentationURL: "https://github.com/heycharge/heycharge-gateway-esp32/tree/main/homeassistant/card",
 });
 
+// Determine base path from current script URL (works with both /local/ and /hacsfiles/)
+const _hcScripts = document.querySelectorAll('script[src*="heycharge-card"]');
+const _hcBasePath = _hcScripts.length > 0
+  ? _hcScripts[_hcScripts.length - 1].src.replace(/\/[^/]*$/, '')
+  : '/local/heycharge-card';
+
 // Load editor component
 if (!customElements.get("heycharge-card-editor")) {
   const editorScript = document.createElement("script");
   editorScript.type = "module";
-  editorScript.src = "/local/heycharge-card/heycharge-card-editor.js?v=1";
+  editorScript.src = _hcBasePath + "/heycharge-card-editor.js?v=2";
   document.head.appendChild(editorScript);
 }
 
