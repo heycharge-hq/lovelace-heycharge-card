@@ -542,6 +542,7 @@ class HeyChargeCard extends LitElement {
       // Default: look for entities containing 'heycharge'
       candidates = allStates.filter(e => e.includes('heycharge'));
     }
+    console.debug(`[HeyCharge] Entity scan: prefix='${prefix}', candidates=${candidates.length}`);
     if (candidates.length === 0) return null;
 
     const result = {};
@@ -556,6 +557,8 @@ class HeyChargeCard extends LitElement {
         matchCount++;
       }
     }
+
+    console.debug(`[HeyCharge] Matched ${matchCount} entities:`, result);
 
     // Need at least a few core entities to consider this a valid match
     if (matchCount < 3) return null;
