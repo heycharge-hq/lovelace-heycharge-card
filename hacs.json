@@ -2,6 +2,7 @@
   "name": "HeyCharge Card",
   "type": "plugin",
   "render_readme": true,
-  "filename": "dist/heycharge-card.js",
+  "content_in_root": false,
+  "filename": "heycharge-card.js",
   "homeassistant": "2023.1.0"
 }
