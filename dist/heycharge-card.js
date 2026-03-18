@@ -590,15 +590,11 @@ class HeyChargeCard extends LitElement {
   }
 
   _hasValidData(entities) {
-    const STALE_TIMEOUT = 60000;
-    const now = new Date();
+    // Check if any mapped entity exists and is not unavailable
     for (const entityKey of Object.keys(entities)) {
       const entity = this.hass.states[entities[entityKey]];
-      if (entity && entity.state !== 'unavailable') {
-        // Use last_updated (changes on every poll) rather than last_changed
-        // (which only changes when the value changes)
-        const lastUpdated = new Date(entity.last_updated || entity.last_changed);
-        if (now - lastUpdated < STALE_TIMEOUT) return true;
+      if (entity && entity.state !== 'unavailable' && entity.state !== 'unknown') {
+        return true;
       }
     }
     return false;
