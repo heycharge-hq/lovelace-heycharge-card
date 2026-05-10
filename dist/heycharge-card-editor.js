@@ -161,8 +161,21 @@ export class HeyChargeCardEditor extends LitElement {
   }
 
   _renderDetectedEntities() {
-    const allEntities = Object.keys(this.hass.states)
-      .filter(e => e.includes("heycharge"));
+    // Prefer HA's entity registry — entities created by the heycharge
+    // integration are tagged with platform='heycharge' regardless of
+    // what the user named the device. Fall back to substring match for MQTT-
+    // discovered entities (Consumer Gateway publishes into heycharge/* topics)
+    // and for older HA versions where hass.entities isn't populated.
+    let allEntities = [];
+    if (this.hass.entities) {
+      allEntities = Object.values(this.hass.entities)
+        .filter(e => e && e.platform === "heycharge")
+        .map(e => e.entity_id);
+    }
+    if (allEntities.length === 0) {
+      allEntities = Object.keys(this.hass.states)
+        .filter(e => e.includes("heycharge"));
+    }
     const displayed = allEntities.slice(0, 10);
     const remaining = allEntities.length - displayed.length;
 

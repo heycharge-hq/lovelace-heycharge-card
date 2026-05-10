@@ -4,7 +4,7 @@ const LitElement = Object.getPrototypeOf(
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
-const CARD_VERSION = "2.1.0";
+const CARD_VERSION = "0.1.0";
 
 console.info(
   `%c  HEYCHARGE-CARD  \n%c  Version ${CARD_VERSION}  `,
@@ -552,10 +552,10 @@ class HeyChargeCard extends LitElement {
   _scanEntities() {
     const allStates = Object.keys(this.hass.states);
 
-    // If entity_prefix is configured, use it to filter candidates
     const prefix = this.config.entity_prefix || '';
     let candidates;
     if (prefix) {
+      // Explicit user override — wins over auto-detect.
       // Strip domain prefix if provided (e.g., "sensor.rnd_new_board_" -> "rnd_new_board_")
       const barePrefix = prefix.includes('.') ? prefix.split('.').slice(1).join('.') : prefix;
       candidates = allStates.filter(e => {
@@ -563,8 +563,23 @@ class HeyChargeCard extends LitElement {
         return bareName.startsWith(barePrefix);
       });
     } else {
-      // Default: look for entities containing 'heycharge'
-      candidates = allStates.filter(e => e.includes('heycharge'));
+      // Preferred: ask HA's entity registry for entities owned by the
+      // heycharge integration. Robust to whatever the user named the
+      // device — e.g. "Autel" producing sensor.autel_* IDs.
+      let platformMatches = [];
+      if (this.hass.entities) {
+        platformMatches = Object.values(this.hass.entities)
+          .filter(e => e && e.platform === 'heycharge')
+          .map(e => e.entity_id);
+      }
+      if (platformMatches.length > 0) {
+        candidates = platformMatches;
+      } else {
+        // Fallback: substring match. Catches MQTT-discovered entities
+        // (Consumer Gateway publishes into heycharge/* topics) and any
+        // older HA where hass.entities isn't populated yet.
+        candidates = allStates.filter(e => e.includes('heycharge'));
+      }
     }
     console.debug(`[HeyCharge] Entity scan: prefix='${prefix}', candidates=${candidates.length}`, candidates.slice(0, 10));
     if (candidates.length === 0) return null;
