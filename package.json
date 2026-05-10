@@ -1,7 +1,7 @@
 {
   "name": "heycharge-card",
-  "version": "0.1.0",
-  "description": "A Home Assistant Lovelace card for controlling HeyCharge EV chargers",
+  "version": "0.1.1",
+  "description": "A Home Assistant Lovelace card for HeyCharge CONNECT devices",
   "main": "dist/heycharge-card.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

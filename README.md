@@ -1,6 +1,8 @@
 # HeyCharge Card for Home Assistant
 
-A modern Lovelace card for controlling and monitoring your HeyCharge EV charger. Designed for the HeyCharge Gateway Custom Integration.
+A Lovelace card for controlling and monitoring your [HeyCharge CONNECT](https://heycharge.com/) device — pairs with the [HeyCharge CONNECT integration for Home Assistant](../integration/) and works with the [CONNECT Bridge](https://heycharge.com/products/connect-bridge) and [CONNECT MagicBox](https://heycharge.com/products/consumer-gateway).
+
+![HeyCharge Card](screenshot.png)
 
 ## Features
 
@@ -15,9 +17,9 @@ A modern Lovelace card for controlling and monitoring your HeyCharge EV charger.
 
 ## Prerequisites
 
-- Home Assistant 2023.1.0 or newer
-- [HeyCharge Gateway Integration](../integration/) installed and configured
-- Gateway running Consumer Gateway firmware
+- Home Assistant 2023.1.0 or newer (HA 2026.3+ to render the integration's bundled brand icons)
+- [HeyCharge CONNECT integration](../integration/) installed and configured
+- A [CONNECT Bridge](https://heycharge.com/products/connect-bridge) (running OCPP Translator firmware) or [CONNECT MagicBox](https://heycharge.com/products/consumer-gateway) (running Consumer Gateway firmware) — both expose the local HTTP API the card and integration depend on
 
 ## Installation
 
@@ -44,17 +46,17 @@ resources:
 
 ### HACS
 
-1. Open HACS > Frontend
-2. Click the three-dot menu > **Custom repositories**
-3. Add the repository URL, select **Lovelace** as the category
-4. Search for "HeyCharge Card" and install
-5. Refresh your browser
+1. Open HACS in your Home Assistant instance.
+2. Click the three-dot menu in the top-right → **Custom repositories**.
+3. Add the URL `https://github.com/heycharge-hq/lovelace-heycharge-card` and pick **Dashboard** as the type.
+4. Click **Download** on the new "HeyCharge Card" entry.
+5. Hard-refresh your browser (Cmd/Ctrl + Shift + R).
 
 ## Configuration
 
 ### Basic (Auto-detection)
 
-The card auto-detects your HeyCharge entities:
+The card finds your HeyCharge entities automatically by looking for any entity with `platform: heycharge` in HA's entity registry. No config needed:
 
 ```yaml
 type: custom:heycharge-card
@@ -64,30 +66,27 @@ type: custom:heycharge-card
 
 ```yaml
 type: custom:heycharge-card
-entity_prefix: sensor.heycharge_      # Entity prefix for auto-discovery
-device_id: ABCD                       # Manual device ID override
-charger_name: Garage Charger          # Custom display name
 show_company_mode: true               # Show personal/company session buttons
 show_statistics: true                 # Show energy statistics section
 show_advanced: false                  # Show advanced details section
 compact_mode: false                   # Use compact layout for small cards
+entity_prefix: sensor.garage_         # Optional override (rare; see below)
 ```
 
 ### Configuration Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `entity_prefix` | string | `sensor.heycharge_` | Prefix for entity auto-discovery |
-| `device_id` | string | Auto-detected | Device ID from gateway (last 4 of serial) |
-| `charger_name` | string | Auto-generated | Custom name displayed in the card header |
-| `show_company_mode` | boolean | `true` | Show separate personal/company session buttons |
+| `show_company_mode` | boolean | `true` | Show separate personal/company session buttons (only relevant when company car mode is enabled in the gateway) |
 | `show_statistics` | boolean | `true` | Display session energy and duration stats |
-| `show_advanced` | boolean | `false` | Show per-phase currents and charger state |
+| `show_advanced` | boolean | `false` | Show per-phase currents and charger state details |
 | `compact_mode` | boolean | `false` | Compact layout for smaller dashboard areas |
+| `entity_prefix` | string | (auto) | Override only if auto-detect fails — e.g. you renamed entities or are using legacy MQTT discovery. Card prefers the registry-based detect when this is unset. |
+| `device_id` | string | (auto) | Manual device ID hint. Rarely needed; auto-detect picks one when the entity registry has any HeyCharge entity. |
 
 ## Entity Mapping
 
-The card reads entities created by the [HeyCharge Gateway Integration](../integration/). Entity IDs follow the pattern `{domain}.heycharge_{device_id}_{key}`:
+The card reads entities created by the [HeyCharge CONNECT integration](../integration/). With the integration's `_attr_has_entity_name = True`, HA derives entity IDs from the device name plus the entity key — e.g. a device named "Garage" produces `sensor.garage_charging_power`, `switch.garage_pause_charging`, etc. The card auto-discovers them by looking up `platform: heycharge` in the entity registry, so the exact prefix doesn't matter.
 
 ### Required Entities
 
@@ -163,7 +162,7 @@ heycharge-card:
 
 ### Entities Not Detected
 
-1. Verify the HeyCharge Gateway Integration is installed and connected
+1. Verify the HeyCharge integration is installed and connected to your CONNECT device
 2. Check that entities exist in **Developer Tools > States**
 3. Try specifying `device_id` manually in the card config
 4. Adjust `entity_prefix` if your entity naming differs

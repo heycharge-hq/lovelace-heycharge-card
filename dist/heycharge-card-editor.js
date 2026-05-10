@@ -94,7 +94,7 @@ export class HeyChargeCardEditor extends LitElement {
             .value="${this._charger_name}"
             .configValue="${"charger_name"}"
             @value-changed="${this._valueChanged}"
-            placeholder="HeyCharge Gateway"
+            placeholder="HeyCharge CONNECT"
           ></paper-input>
         </div>
 

@@ -4,7 +4,7 @@ const LitElement = Object.getPrototypeOf(
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
-const CARD_VERSION = "0.1.0";
+const CARD_VERSION = "0.1.1";
 
 console.info(
   `%c  HEYCHARGE-CARD  \n%c  Version ${CARD_VERSION}  `,
@@ -1625,7 +1625,7 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "heycharge-card",
   name: "HeyCharge Card",
-  description: "Control and monitor your HeyCharge EV charger",
+  description: "Control and monitor your HeyCharge CONNECT device",
   preview: true,
   documentationURL: "https://github.com/heycharge/heycharge-gateway-esp32/tree/main/homeassistant/card",
 });

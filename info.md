@@ -1,6 +1,6 @@
 # HeyCharge Card
 
-A modern Home Assistant Lovelace card for controlling and monitoring your HeyCharge EV charger via the HeyCharge Gateway Integration (HTTP REST API).
+A Home Assistant Lovelace card for controlling and monitoring a [HeyCharge CONNECT](https://heycharge.com/) device — pairs with the [HeyCharge CONNECT integration](https://github.com/heycharge-hq/homeassistant-heycharge) and works with the [CONNECT Bridge](https://heycharge.com/products/connect-bridge) and [CONNECT MagicBox](https://heycharge.com/products/consumer-gateway).
 
 ## Features
 
@@ -52,8 +52,8 @@ compact_mode: false               # Use compact layout
 ## Requirements
 
 - Home Assistant 2023.1.0+
-- HeyCharge Gateway Integration installed and configured
-- Gateway running Consumer Gateway firmware
+- [HeyCharge CONNECT integration](https://github.com/heycharge-hq/homeassistant-heycharge) installed and configured
+- A [CONNECT Bridge](https://heycharge.com/products/connect-bridge) (OCPP Translator firmware) or [CONNECT MagicBox](https://heycharge.com/products/consumer-gateway) (Consumer Gateway firmware)
 
 ## Installation
 
