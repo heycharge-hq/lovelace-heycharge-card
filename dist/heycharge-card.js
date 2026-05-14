@@ -4,7 +4,7 @@ const LitElement = Object.getPrototypeOf(
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
-const CARD_VERSION = "0.1.2";
+const CARD_VERSION = "0.1.3";
 
 console.info(
   `%c  HEYCHARGE-CARD  \n%c  Version ${CARD_VERSION}  `,
@@ -196,21 +196,22 @@ class HeyChargeCard extends LitElement {
 
     return html`
       <div class="main-status ${isCharging ? 'active' : ''}">
-        <div class="power-display">
-          <span class="power-value">${powerKw}</span>
-          <span class="power-unit">kW</span>
-          <span class="power-sep">|</span>
-          <span class="power-amps">${maxAmps}</span>
-          <span class="power-amps-unit">A</span>
-        </div>
-        <div class="power-label">Charging Power</div>
         ${isCharging ? html`
+          <div class="power-display">
+            <span class="power-value">${powerKw}</span>
+            <span class="power-unit">kW</span>
+            <span class="power-sep">|</span>
+            <span class="power-amps">${maxAmps}</span>
+            <span class="power-amps-unit">A</span>
+          </div>
           <div class="session-meta">
             <span class="session-meta-value">${sessionEnergy.toFixed(2)} kWh</span>
             <span class="session-meta-sep">·</span>
             <span class="session-meta-value">${this._formatDuration(sessionDuration)}</span>
           </div>
-        ` : ''}
+        ` : html`
+          <div class="power-idle">IDLE</div>
+        `}
       </div>
     `;
   }
@@ -806,11 +807,11 @@ class HeyChargeCard extends LitElement {
       .status-pill {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 4px 12px;
+        gap: 8px;
+        padding: 8px 16px;
         border-radius: var(--hc-pill);
-        font-size: 12px;
-        font-weight: 500;
+        font-size: 14px;
+        font-weight: 600;
         background: var(--hc-bg-secondary);
         color: var(--hc-text-secondary);
         transition: all var(--hc-transition);
@@ -818,8 +819,8 @@ class HeyChargeCard extends LitElement {
       }
 
       .status-dot {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
         border-radius: 50%;
         background: var(--hc-text-secondary);
         transition: all var(--hc-transition);
@@ -827,20 +828,20 @@ class HeyChargeCard extends LitElement {
       }
 
       .status-pill.charging {
-        background: rgba(var(--hc-accent-rgb), 0.12);
-        color: var(--hc-accent);
+        background: rgba(76, 175, 80, 0.14);
+        color: #4CAF50;
       }
       .status-pill.charging .status-dot {
-        background: var(--hc-accent);
+        background: #4CAF50;
         animation: pulse 2s infinite;
       }
 
       .status-pill.idle {
-        background: rgba(76, 175, 80, 0.12);
-        color: var(--hc-active);
+        background: rgba(33, 150, 243, 0.14);
+        color: #2196F3;
       }
       .status-pill.idle .status-dot {
-        background: var(--hc-active);
+        background: #2196F3;
       }
 
       .status-pill.disconnected {
@@ -981,6 +982,16 @@ class HeyChargeCard extends LitElement {
         color: var(--hc-text-secondary);
         margin-top: 4px;
         opacity: 0.6;
+      }
+
+      .power-idle {
+        font-size: 44px;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        color: var(--hc-text-secondary);
+        opacity: 0.55;
+        line-height: 1;
+        text-align: center;
       }
 
       /* Session meta row (under power display when charging) */
@@ -1501,6 +1512,10 @@ class HeyChargeCard extends LitElement {
       @media (max-width: 480px) {
         .power-value {
           font-size: 28px;
+        }
+
+        .power-idle {
+          font-size: 36px;
         }
 
         .stat-row {

@@ -6,14 +6,13 @@ A Lovelace card for controlling and monitoring your [HeyCharge CONNECT](https://
 
 ## Features
 
-- **Real-time monitoring** -- live power, current, and energy tracking with animated indicators
-- **Full control** -- start/stop sessions, adjust current limit, pause charging
-- **Company car mode** -- separate personal and company session buttons
-- **Statistics** -- current and last session energy, duration, and current request
-- **Advanced view** -- per-phase currents and charger state details
-- **Responsive** -- optimized for mobile, tablet, and desktop
-- **Theme integration** -- follows your Home Assistant theme automatically
-- **Visual config editor** -- built-in card editor for easy setup
+- **Real-time monitoring** — live power, current, and energy tracking with animated indicators
+- **Control** — stop the current session, adjust the current limit, pause/resume charging
+- **Statistics** — current and last session energy, duration, and current request
+- **Advanced view** — per-phase currents and charger state details
+- **Responsive** — optimized for mobile, tablet, and desktop
+- **Theme integration** — follows your Home Assistant theme for background, text, and accent colors
+- **Visual config editor** — built-in card editor for easy setup
 
 ## Prerequisites
 
@@ -66,21 +65,22 @@ type: custom:heycharge-card
 
 ```yaml
 type: custom:heycharge-card
-show_company_mode: true               # Show personal/company session buttons
 show_statistics: true                 # Show energy statistics section
 show_advanced: false                  # Show advanced details section
 compact_mode: false                   # Use compact layout for small cards
+charger_name: Garage Charger          # Optional display-name override
 entity_prefix: sensor.garage_         # Optional override (rare; see below)
+device_id: A1B2C3D4                   # Optional manual device ID hint
 ```
 
 ### Configuration Options
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `show_company_mode` | boolean | `true` | Show separate personal/company session buttons (only relevant when company car mode is enabled in the gateway) |
 | `show_statistics` | boolean | `true` | Display session energy and duration stats |
 | `show_advanced` | boolean | `false` | Show per-phase currents and charger state details |
 | `compact_mode` | boolean | `false` | Compact layout for smaller dashboard areas |
+| `charger_name` | string | (auto) | Override the displayed charger name (defaults to the HA device title) |
 | `entity_prefix` | string | (auto) | Override only if auto-detect fails — e.g. you renamed entities or are using legacy MQTT discovery. Card prefers the registry-based detect when this is unset. |
 | `device_id` | string | (auto) | Manual device ID hint. Rarely needed; auto-detect picks one when the entity registry has any HeyCharge entity. |
 
@@ -101,33 +101,33 @@ The card reads entities created by the [HeyCharge CONNECT integration](../integr
 
 | Entity ID Pattern | Integration Key | Used For |
 |-------------------|-----------------|----------|
-| `sensor.*_current_request` | current_request | Current request display |
+| `sensor.*_current_request` | current_request | Current request display and slider marker |
 | `sensor.*_charging_current_l1` | charging_current_l1 | Phase 1 current (advanced) |
 | `sensor.*_charging_current_l2` | charging_current_l2 | Phase 2 current (advanced) |
 | `sensor.*_charging_current_l3` | charging_current_l3 | Phase 3 current (advanced) |
-| `sensor.*_energy_delivered` | kwh_delivered | Session energy stat |
+| `sensor.*_kwh_delivered` | kwh_delivered | Session energy stat |
 | `sensor.*_last_session_energy` | last_session_energy | Previous session stat |
 | `sensor.*_last_session_duration` | last_session_duration | Previous session stat |
-| `sensor.*_session_duration` | current_session_duration | Current session stat |
-| `sensor.*_session_type` | session_type | Personal/company badge |
-| `button.*_start_session` | start_session | Start button |
-| `button.*_start_session_personal` | start_session_personal | Personal start button |
-| `button.*_start_session_company` | start_session_company | Company start button |
+| `sensor.*_current_session_duration` | current_session_duration | Current session stat |
+| `binary_sensor.*_session_active` | session_active | Drives Stop-button visibility |
+| `binary_sensor.*_p14a_enabled` | p14a_enabled | §14a status LED in header |
+| `binary_sensor.*_p14a_active` | p14a_active | §14a curtailment indicator |
+| `binary_sensor.*_heycharge_backend_enabled` | heycharge_backend_enabled | Backend status LED in header |
+| `binary_sensor.*_heycharge_backend_connected` | heycharge_backend_connected | Backend connectivity indicator |
 | `button.*_end_session` | end_session | Stop button |
 
 ## Card Sections
 
 ### Header
-Shows charger name, connection status indicator, and current charger state (Charging, Idle, Error, etc.).
+Shows charger name, a status pill (Ready, Charging, Error, etc.), and small indicator LEDs for §14a and HeyCharge-backend status when those features are configured on the device.
 
 ### Main Status
-Large power reading in kW with approximate amps. When company car mode is active, shows a Personal/Company badge.
+When a session is active, shows charging power (kW) and current (A), plus session energy and duration. When idle, shows an idle indicator instead.
 
 ### Controls
-- **Start Session** buttons (single or personal+company depending on mode)
-- **Stop Session** button (visible when session active)
+- **End Session** button (visible when a session is active)
 - **Pause Charging** switch
-- **Current Limit** slider (6-32A with tick marks)
+- **Current Limit** slider (6-32A with tick marks; clamps to `current_request` when present)
 
 ### Statistics
 - Current session energy and duration
@@ -140,16 +140,7 @@ Large power reading in kW with approximate amps. When company car mode is active
 
 ## Theming
 
-The card follows your Home Assistant theme. You can customize HeyCharge-specific colors via theme variables:
-
-```yaml
-heycharge-card:
-  heycharge-green: "#00C853"
-  heycharge-green-light: "#5EFC82"
-  heycharge-green-dark: "#009624"
-  personal-blue: "#2196F3"
-  company-purple: "#9C27B0"
-```
+The card consumes the standard Home Assistant theme variables (`--primary-color`, `--ha-card-background`, `--primary-text-color`, `--secondary-text-color`, `--divider-color`, `--error-color`, `--warning-color`, etc.), so it follows whatever theme you have applied. The status pill colors (blue for Ready, green for Charging) are intentionally fixed so the state reads consistently regardless of theme.
 
 ## Troubleshooting
 

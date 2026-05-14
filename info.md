@@ -5,7 +5,7 @@ A Home Assistant Lovelace card for controlling and monitoring a [HeyCharge CONNE
 ## Features
 
 - Real-time power, current, and energy monitoring with animated indicators
-- Start/stop charging sessions with company car mode support
+- Stop the current session, pause/resume, adjust current limit
 - Current limit slider (6-32A) with live feedback
 - Session statistics (energy, duration, current request)
 - Per-phase current readings in advanced view
@@ -15,13 +15,12 @@ A Home Assistant Lovelace card for controlling and monitoring a [HeyCharge CONNE
 ## What's Displayed
 
 ### Main Status
-- Current charging power (kW) with approximate amps
-- Charger state with animated status indicator
-- Session type badge (Personal/Company)
+- Charging power (kW) and current (A) while a session is active; idle indicator otherwise
+- Status pill showing Ready / Charging / Error / etc.
+- Small header LEDs for §14a curtailment and HeyCharge-backend status when configured
 
 ### Controls
-- Start charging buttons (Personal/Company modes)
-- Stop charging button
+- End session button (when a session is active)
 - Pause charging switch
 - Current limit slider (6-32A)
 
@@ -41,11 +40,10 @@ The card automatically detects your HeyCharge entities:
 ```yaml
 type: custom:heycharge-card
 entity_prefix: sensor.heycharge_  # Optional: entity prefix for auto-discovery
-device_id: ABCD                  # Optional: manually specify device ID
+device_id: ABCD                   # Optional: manually specify device ID
 charger_name: My Charger          # Optional: custom display name
-show_company_mode: true           # Show company car features
 show_statistics: true             # Show energy statistics
-show_advanced: false              # Show advanced settings section
+show_advanced: false              # Show advanced details section
 compact_mode: false               # Use compact layout
 ```
 
