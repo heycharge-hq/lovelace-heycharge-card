@@ -47,10 +47,6 @@ export class HeyChargeCardEditor extends LitElement {
     return this._config?.charger_name || "";
   }
 
-  get _show_company_mode() {
-    return this._config?.show_company_mode !== false;
-  }
-
   get _show_statistics() {
     return this._config?.show_statistics !== false;
   }
@@ -101,14 +97,6 @@ export class HeyChargeCardEditor extends LitElement {
         <div class="config-section">
           <h3>Display Options</h3>
           
-          <ha-formfield label="Show Company Mode Features">
-            <ha-switch
-              .checked="${this._show_company_mode}"
-              .configValue="${"show_company_mode"}"
-              @change="${this._valueChanged}"
-            ></ha-switch>
-          </ha-formfield>
-          
           <ha-formfield label="Show Statistics">
             <ha-switch
               .checked="${this._show_statistics}"
@@ -146,10 +134,6 @@ export class HeyChargeCardEditor extends LitElement {
             The card will automatically detect HeyCharge Consumer Gateway entities
             based on the entity prefix. If auto-detection doesn't work, you can
             manually specify the device ID.
-          </p>
-          <p>
-            <strong>Company Mode:</strong> Enable to show separate controls for
-            personal and company charging sessions.
           </p>
           <p>
             <strong>Compact Mode:</strong> Use for smaller dashboard cards with

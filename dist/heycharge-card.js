@@ -4,7 +4,7 @@ const LitElement = Object.getPrototypeOf(
 const html = LitElement.prototype.html;
 const css = LitElement.prototype.css;
 
-const CARD_VERSION = "0.1.1";
+const CARD_VERSION = "0.1.2";
 
 console.info(
   `%c  HEYCHARGE-CARD  \n%c  Version ${CARD_VERSION}  `,
@@ -49,7 +49,6 @@ class HeyChargeCard extends LitElement {
       throw new Error("Invalid configuration");
     }
     this.config = {
-      show_company_mode: true,
       show_statistics: true,
       show_advanced: false,
       compact_mode: false,
@@ -60,7 +59,6 @@ class HeyChargeCard extends LitElement {
   static getStubConfig() {
     return {
       entity_prefix: "sensor.heycharge_",
-      show_company_mode: true,
       show_statistics: true,
     };
   }
@@ -85,7 +83,6 @@ class HeyChargeCard extends LitElement {
     const deviceId = this._getDeviceId();
     const entities = this._getEntities(deviceId);
     const isCharging = this._isCharging(entities);
-    const sessionType = this._getSessionType(entities);
     const chargingPower = this._getChargingPower(entities);
     const chargingCurrent = this._getMaxChargingCurrent(entities);
     const currentLimit = this._getCurrentLimit(entities);
@@ -99,16 +96,16 @@ class HeyChargeCard extends LitElement {
     this._checkSessionStateChange(sessionActive);
 
     if (this.config.compact_mode) {
-      return this._renderCompact(entities, isCharging, chargingPower, currentLimit, currentRequest, sessionActive, chargerState, hasValidData);
+      return this._renderCompact(entities, isCharging, chargingPower, currentLimit, sessionActive, chargerState, hasValidData);
     }
 
     return html`
       <ha-card>
         <div class="card-content">
           ${this._renderHeader(entities, isCharging)}
-          ${this._renderMainStatus(isCharging, chargingPower, chargingCurrent, sessionType)}
-          ${this._renderControls(entities, isCharging, sessionType, currentLimit, currentRequest)}
-          ${this.config.show_statistics ? this._renderStatistics(sessionDuration, sessionEnergy, entities) : ''}
+          ${this._renderMainStatus(isCharging, chargingPower, chargingCurrent, sessionDuration, sessionEnergy)}
+          ${this._renderControls(entities, isCharging, currentLimit, currentRequest)}
+          ${this.config.show_statistics ? this._renderStatistics(entities) : ''}
           ${this.config.show_advanced ? this._renderAdvanced(entities, chargingCurrent) : ''}
         </div>
       </ha-card>
@@ -193,10 +190,9 @@ class HeyChargeCard extends LitElement {
     `;
   }
 
-  _renderMainStatus(isCharging, chargingPower, chargingCurrent, sessionType) {
+  _renderMainStatus(isCharging, chargingPower, chargingCurrent, sessionDuration, sessionEnergy) {
     const powerKw = (chargingPower / 1000).toFixed(1);
     const maxAmps = chargingCurrent.toFixed(1);
-    const sessionBadge = this._getSessionBadge(sessionType);
 
     return html`
       <div class="main-status ${isCharging ? 'active' : ''}">
@@ -208,13 +204,18 @@ class HeyChargeCard extends LitElement {
           <span class="power-amps-unit">A</span>
         </div>
         <div class="power-label">Charging Power</div>
-        ${sessionBadge}
+        ${isCharging ? html`
+          <div class="session-meta">
+            <span class="session-meta-value">${sessionEnergy.toFixed(2)} kWh</span>
+            <span class="session-meta-sep">·</span>
+            <span class="session-meta-value">${this._formatDuration(sessionDuration)}</span>
+          </div>
+        ` : ''}
       </div>
     `;
   }
 
-  _renderControls(entities, isCharging, sessionType, currentLimit, currentRequest) {
-    const showCompanyMode = this.config.show_company_mode && this._hasCompanyMode(entities);
+  _renderControls(entities, isCharging, currentLimit, currentRequest) {
     const sessionActive = this._getEntityState(entities, 'session_active', 'off') === 'on';
     const pauseCharging = this._getPauseCharging(entities);
     const chargerState = this._getEntityState(entities, 'charger_state', 'unknown');
@@ -244,8 +245,8 @@ class HeyChargeCard extends LitElement {
 
     return html`
       <div class="controls">
-        <div class="control-buttons">
-          ${sessionActive ? html`
+        ${sessionActive ? html`
+          <div class="control-buttons">
             <button class="control-button stop"
                     @click="${this._stopSession}"
                     ?disabled="${controlsDisabled || this._pendingSessionAction === 'stop'}">
@@ -256,19 +257,8 @@ class HeyChargeCard extends LitElement {
               `}
               ${this._pendingSessionAction === 'stop' ? 'Stopping...' : 'End Session'}
             </button>
-          ` : html`
-            <button class="control-button start personal"
-                    @click="${() => this._startSession('personal')}"
-                    ?disabled="${controlsDisabled || this._pendingSessionAction === 'start'}">
-              ${this._pendingSessionAction === 'start' ? html`
-                <ha-icon icon="mdi:loading" class="spinning"></ha-icon>
-              ` : html`
-                <ha-icon icon="mdi:play-circle"></ha-icon>
-              `}
-              ${this._pendingSessionAction === 'start' ? 'Starting...' : 'Start Charging'}
-            </button>
-          `}
-        </div>
+          </div>
+        ` : ''}
 
         <div class="pause-control">
           <div class="pause-label">
@@ -321,40 +311,27 @@ class HeyChargeCard extends LitElement {
     `;
   }
 
-  _renderStatistics(sessionDuration, sessionEnergy, entities) {
+  _renderStatistics(entities) {
     const lastSessionEnergy = this._getLastSessionEnergy(entities);
     const lastSessionDuration = this._getLastSessionDuration(entities);
-    const isCharging = this._isCharging(entities);
+
+    // Only render the Requested tile when the integration is exposing
+    // current_request (firmware suppresses the field in OCPP-translator mode)
+    // and the value is meaningful (> 0).
+    const currentRequestEntityId = entities.current_request;
+    const currentRequestState = currentRequestEntityId
+      ? this.hass.states[currentRequestEntityId]
+      : null;
     const currentRequest = this._getCurrentRequest(entities);
+    const showRequested =
+      currentRequestState &&
+      currentRequestState.state !== 'unavailable' &&
+      currentRequestState.state !== 'unknown' &&
+      currentRequest > 0;
 
     return html`
       <div class="statistics">
         <div class="stat-row">
-          ${isCharging ? html`
-            <div class="stat-item">
-              <ha-icon icon="mdi:timer"></ha-icon>
-              <div class="stat-content">
-                <div class="stat-value">${this._formatDuration(sessionDuration)}</div>
-                <div class="stat-label">Session</div>
-              </div>
-            </div>
-            <div class="stat-item">
-              <ha-icon icon="mdi:lightning-bolt"></ha-icon>
-              <div class="stat-content">
-                <div class="stat-value">${sessionEnergy.toFixed(2)} kWh</div>
-                <div class="stat-label">Energy</div>
-              </div>
-            </div>
-            ${currentRequest > 0 ? html`
-              <div class="stat-item">
-                <ha-icon icon="mdi:car-electric"></ha-icon>
-                <div class="stat-content">
-                  <div class="stat-value">${currentRequest.toFixed(1)} A</div>
-                  <div class="stat-label">Requested</div>
-                </div>
-              </div>
-            ` : ''}
-          ` : ''}
           <div class="stat-item">
             <ha-icon icon="mdi:history"></ha-icon>
             <div class="stat-content">
@@ -369,6 +346,15 @@ class HeyChargeCard extends LitElement {
               <div class="stat-label">Last Duration</div>
             </div>
           </div>
+          ${showRequested ? html`
+            <div class="stat-item">
+              <ha-icon icon="mdi:car-electric"></ha-icon>
+              <div class="stat-content">
+                <div class="stat-value">${currentRequest.toFixed(1)} A</div>
+                <div class="stat-label">Requested</div>
+              </div>
+            </div>
+          ` : ''}
         </div>
       </div>
     `;
@@ -410,7 +396,7 @@ class HeyChargeCard extends LitElement {
     `;
   }
 
-  _renderCompact(entities, isCharging, chargingPower, currentLimit, currentRequest, sessionActive, chargerState, hasValidData) {
+  _renderCompact(entities, isCharging, chargingPower, currentLimit, sessionActive, chargerState, hasValidData) {
     const chargerName = this._getChargerName();
     const powerKw = (chargingPower / 1000).toFixed(1);
     const isBooting = chargerState.toLowerCase() === 'boot';
@@ -452,35 +438,10 @@ class HeyChargeCard extends LitElement {
                   <ha-icon icon="mdi:stop"></ha-icon>
                 `}
               </button>
-            ` : html`
-              <button class="compact-btn start"
-                      @click="${() => this._startSession('personal')}"
-                      ?disabled="${controlsDisabled || this._pendingSessionAction === 'start'}">
-                ${this._pendingSessionAction === 'start' ? html`
-                  <ha-icon icon="mdi:loading" class="spinning"></ha-icon>
-                ` : html`
-                  <ha-icon icon="mdi:play"></ha-icon>
-                `}
-              </button>
-            `}
+            ` : ''}
           </div>
         </div>
       </ha-card>
-    `;
-  }
-
-  _getSessionBadge(sessionType) {
-    if (sessionType === 'none' || !sessionType) return '';
-    const isPersonal = sessionType === 'personal';
-    const icon = isPersonal ? 'mdi:account' : 'mdi:domain';
-    const label = isPersonal ? 'Personal' : 'Company';
-    const className = isPersonal ? 'personal' : 'company';
-
-    return html`
-      <div class="session-badge ${className}">
-        <ha-icon icon="${icon}"></ha-icon>
-        <span>${label}</span>
-      </div>
     `;
   }
 
@@ -503,9 +464,6 @@ class HeyChargeCard extends LitElement {
       last_session_energy:{ domain: 'sensor',        suffix: 'last_session_energy' },
       last_session_duration:{ domain: 'sensor',      suffix: 'last_session_duration' },
       session_active:     { domain: 'binary_sensor', suffix: 'session_active' },
-      session_type:       { domain: 'sensor',        suffix: 'session_type' },
-      start_personal:     { domain: 'button',        suffix: 'start_session_personal' },
-      start_company:      { domain: 'button',        suffix: 'start_session_company' },
       end_session:        { domain: 'button',        suffix: 'end_session' },
       p14a_enabled:       { domain: 'binary_sensor', suffix: 'p14a_enabled' },
       p14a_active:        { domain: 'binary_sensor', suffix: 'p14a_active' },
@@ -639,7 +597,6 @@ class HeyChargeCard extends LitElement {
     return false;
   }
 
-  _getSessionType(entities) { return this._getEntityState(entities, 'session_type', 'none'); }
   _getChargingPower(entities) { return this._getEntityNumericState(entities, 'charging_power', 0); }
   _getMaxChargingCurrent(entities) {
     return Math.max(this._getCurrentL1(entities), this._getCurrentL2(entities), this._getCurrentL3(entities));
@@ -655,7 +612,6 @@ class HeyChargeCard extends LitElement {
   _getLastSessionEnergy(entities) { return this._getEntityNumericState(entities, 'last_session_energy', 0); }
   _getLastSessionDuration(entities) { return this._getEntityNumericState(entities, 'last_session_duration', 0); }
   _getPauseCharging(entities) { return this._getEntityState(entities, 'pause_charging', 'off') === 'on'; }
-  _hasCompanyMode(entities) { return entities.start_company && this.hass.states[entities.start_company] !== undefined; }
 
   _getChargerName() {
     if (this.config.charger_name) return this.config.charger_name;
@@ -687,19 +643,6 @@ class HeyChargeCard extends LitElement {
   }
 
   // Control methods
-  _startSession(type) {
-    const deviceId = this._getDeviceId();
-    const entities = this._getEntities(deviceId);
-    const button = type === 'company' ? entities.start_company : entities.start_personal;
-    this._pendingSessionAction = 'start';
-    this._clearSessionActionTimeout();
-    this._sessionActionTimeout = setTimeout(() => {
-      this._pendingSessionAction = null;
-      this.requestUpdate();
-    }, 10000);
-    this.hass.callService('button', 'press', { entity_id: button });
-  }
-
   _stopSession() {
     const deviceId = this._getDeviceId();
     const entities = this._getEntities(deviceId);
@@ -799,8 +742,6 @@ class HeyChargeCard extends LitElement {
         --hc-warning: var(--warning-color, #FF9800);
         --hc-info: var(--info-color, #2196F3);
         --hc-info-rgb: var(--rgb-info-color, 33, 150, 243);
-        --hc-company: var(--accent-color, #7E57C2);
-        --hc-company-rgb: var(--rgb-accent-color, 126, 87, 194);
         --hc-radius: var(--ha-card-border-radius, 12px);
         --hc-pill: 200px;
         --hc-transition: 0.3s ease-in-out;
@@ -1042,30 +983,24 @@ class HeyChargeCard extends LitElement {
         opacity: 0.6;
       }
 
-      /* Session Badge */
-      .session-badge {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 12px;
-        border-radius: var(--hc-pill);
-        margin-top: 8px;
-        font-size: 12px;
+      /* Session meta row (under power display when charging) */
+      .session-meta {
+        display: flex;
+        justify-content: center;
+        align-items: baseline;
+        gap: 8px;
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--hc-text-secondary, var(--secondary-text-color));
+        font-variant-numeric: tabular-nums;
+      }
+
+      .session-meta-value {
         font-weight: 500;
       }
 
-      .session-badge ha-icon {
-        --mdc-icon-size: 14px;
-      }
-
-      .session-badge.personal {
-        background: rgba(var(--hc-info-rgb), 0.12);
-        color: var(--hc-info);
-      }
-
-      .session-badge.company {
-        background: rgba(var(--hc-company-rgb), 0.12);
-        color: var(--hc-company);
+      .session-meta-sep {
+        opacity: 0.5;
       }
 
       /* ===== Controls ===== */
@@ -1098,22 +1033,6 @@ class HeyChargeCard extends LitElement {
 
       .control-button ha-icon {
         --mdc-icon-size: 18px;
-      }
-
-      .control-button.start.personal {
-        background: rgba(var(--hc-info-rgb), 0.12);
-        color: var(--hc-info);
-      }
-      .control-button.start.personal:hover:not([disabled]) {
-        background: rgba(var(--hc-info-rgb), 0.22);
-      }
-
-      .control-button.start.company {
-        background: rgba(var(--hc-company-rgb), 0.12);
-        color: var(--hc-company);
-      }
-      .control-button.start.company:hover:not([disabled]) {
-        background: rgba(var(--hc-company-rgb), 0.22);
       }
 
       .control-button.stop {
@@ -1555,14 +1474,6 @@ class HeyChargeCard extends LitElement {
         flex-shrink: 0;
         padding: 0;
         -webkit-tap-highlight-color: transparent;
-      }
-
-      .compact-btn.start {
-        background: rgba(var(--hc-info-rgb), 0.12);
-        color: var(--hc-info);
-      }
-      .compact-btn.start:hover:not([disabled]) {
-        background: rgba(var(--hc-info-rgb), 0.22);
       }
 
       .compact-btn.stop {
